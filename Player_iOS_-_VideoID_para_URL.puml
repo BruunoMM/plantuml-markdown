@@ -1,0 +1,111 @@
+@startuml VideoId to URL
+title =VideoId to URL (part 1)
+
+actor Client
+
+Client -> Player **: init(options: Options)
+    activate Player
+        Player -> Core ++: load()
+            Core -> Core: trigger(.willLoadSource)
+            Core -> Container ++: load(source, mimeType)
+                Container -> Container: trigger(.willLoadSource)
+                Container -> PlaybackFactory **: init(with: options)
+                Container -> PlaybackFactory++: createPlayback()
+                    loop For each playback
+                        PlaybackFactory -> Loader++: playbacks.first(where: canPlay)
+                        return: VideoIdPlayback.Type
+                    end
+                    PlaybackFactory -> VideoIdPlayback **: init(options: options)
+                return <<instance>>\nVideoIdPlayback            
+                    Container -> Container ++: renderPlayback
+                    Container -> VideoIdPlayback++: render
+                        VideoIdPlayback -> VideoIdPlayback: trigger(.didLoadVideoId)
+                    return            
+                return
+            return
+        return
+    return
+
+    center footer Not all method calls are displayed to avoid unecessary clutter
+@enduml
+
+@startuml VideoId to URL (part 2)
+title =VideoId to URL (part 2)
+
+autonumber
+
+participant VideoIdToUrlPlugin as VideoIdPlugin
+participant Playback
+participant WMPURLBuilder as URLBuilder
+participant WMPPlaylistRequest as PlaylistRequest
+participant WMPResourceRequest as ResourceRequest
+participant WMPVideoSecurityRequest as SecurityRequest
+participant LockSessionRequest
+participant WMPService as Service
+
+[o-> VideoIdPlugin: listenToOnce(playback, eventName: .didLoadVideoId)
+activate VideoIdPlugin
+    VideoIdPlugin -> VideoIdPlugin: loadSource()
+    note left: if playback.source can be cast to UInt
+    VideoIdPlugin -> Playback: trigger(.stalling)
+    VideoIdPlugin -> VideoIdPlugin: buildUrl(videoId)
+    VideoIdPlugin -> URLBuilder **: init(videoId: videoId, container: container)
+    VideoIdPlugin -> URLBuilder ++: buildNextUrl()
+        URLBuilder -> URLBuilder: requestPlaylist()
+        URLBuilder -> PlaylistRequest **: initWithVideoId: videoId, callback: playlistRequestCallback)
+        URLBuilder -> Service ++: performRequest(playlistRequest)
+    URLBuilder --> VideoIdPlugin --
+    [<-- VideoIdPlugin
+deactivate VideoIdPlugin
+
+Service ->x PlaylistRequest
+Service --> URLBuilder --: playlistRequestCallback
+activate URLBuilder
+    URLBuilder -> URLBuilder: requestCDNRouter
+    URLBuilder -> ResourceRequest**: init
+    alt if platform is iOS && video has geofencing
+        alt latitude != null && longitude != null
+            note right URLBuilder: adds latitude and longitude to the request
+        else error
+            URLBuilder -> Container: triggerError(LOCATION_UNAVAILABLE)
+        end
+    end
+    URLBuilder -> Service: performRequest(cdnRouterRequest)
+deactivate URLBuilder
+            
+Service ->x ResourceRequest
+Service --> URLBuilder --: cdnRouterRequestCallback
+activate URLBuilder
+    URLBuilder -> URLBuilder: requestVideoSecurity
+    URLBuilder -> SecurityRequest **: init
+    URLBuilder -> Service ++: performRequest(securityRequest)
+deactivate URLBuilder
+            
+
+Service ->x SecurityRequest
+Service --> URLBuilder --: videoSecurityRequestCallback
+activate URLBuilder
+    alt if platform is tvOS && currentVideo.isLive && currentResource.url != null
+        URLBuilder -> Container: trigger(videoInformationLoaded)
+    end
+    URLBuilder -> Container: trigger(authorized)
+    URLBuilder -> URLBuilder: buildUrl
+    URLBuilder -> WMPResourceURIBuilder ++: uriForVideo(_currentVideo, _currentResource, _videoSecurity, user)
+    return urlString
+
+    alt if CDN == Globo
+        URLBuilder -> LockSessionRequest **: initWithUrl(urlString, forToken: self.authToken)
+        URLBuilder -> LockSessionRequest --: fetchWithCallback
+        activate LockSessionRequest
+        LockSessionRequest -> URLBuilder --
+        activate URLBuilder
+    end
+    URLBuilder -> URLBuilder: loadURL(urlString)
+    URLBuilder -> Container: trigger(videoLoaded)
+    URLBuilder -> Container: load(url, mimeType: nil)
+    deactivate URLBuilder
+deactivate URLBuilder
+
+center footer Not all method calls are displayed (like error treatment) to avoid unecessary clutter
+
+@enduml
