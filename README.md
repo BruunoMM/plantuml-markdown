@@ -43,4 +43,4 @@ Also you should use the `cache=no` option so that GitHub always renders the curr
 
 That's all - simply see the diagram live:
 
-![example-uml](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/BruunoMM/plantuml-markdown/master/Player_iOS_-_VideoID_para_URL.puml)
+![example-uml](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/BruunoMM/plantuml-markdown/master/Player_iOS_-_VideoID_para_URL2.puml)
