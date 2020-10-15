@@ -1,34 +1,3 @@
-@startuml VideoId to URL
-title =VideoId to URL (part 1)
-
-actor Client
-
-Client -> Player **: init(options: Options)
-    activate Player
-        Player -> Core ++: load()
-            Core -> Core: trigger(.willLoadSource)
-            Core -> Container ++: load(source, mimeType)
-                Container -> Container: trigger(.willLoadSource)
-                Container -> PlaybackFactory **: init(with: options)
-                Container -> PlaybackFactory++: createPlayback()
-                    loop For each playback
-                        PlaybackFactory -> Loader++: playbacks.first(where: canPlay)
-                        return: VideoIdPlayback.Type
-                    end
-                    PlaybackFactory -> VideoIdPlayback **: init(options: options)
-                return <<instance>>\nVideoIdPlayback            
-                    Container -> Container ++: renderPlayback
-                    Container -> VideoIdPlayback++: render
-                        VideoIdPlayback -> VideoIdPlayback: trigger(.didLoadVideoId)
-                    return            
-                return
-            return
-        return
-    return
-
-    center footer Not all method calls are displayed to avoid unecessary clutter
-@enduml
-
 @startuml VideoId to URL (part 2)
 title =VideoId to URL (part 2)
 
