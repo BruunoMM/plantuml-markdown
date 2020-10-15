@@ -42,3 +42,5 @@ Use the `RAW` version of your `*.iuml` files like that: [https://raw.githubuserc
 Also you should use the `cache=no` option so that GitHub always renders the currently committed version of your PlantUML `*.iuml` files.
 
 That's all - simply see the diagram live:
+
+![example-uml](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/BruunoMM/plantuml-markdown/master/Player_iOS_-_VideoID_para_URL.puml)
